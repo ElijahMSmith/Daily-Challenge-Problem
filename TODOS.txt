@@ -1,2 +1,5 @@
 https://discord.com/oauth2/authorize?client_id=887492809806974976&scope=bot&permissions=2048
 URL to add bot
+
+
+TODO: Test the bot, fix the string formats to look more normal (concatenation)
