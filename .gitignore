@@ -1,3 +1,4 @@
+*.env
 *.js
 !/src/build/
 node_modules
