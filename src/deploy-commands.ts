@@ -10,9 +10,24 @@ const commandFiles = fs
 	.readdirSync("./commands")
 	.filter((file) => file.endsWith(".js"))
 
-// Place your client and guild ids here
 const clientId = "887492809806974976"
 const guildId = "889280418094927872"
+
+/*
+
+I think this goes in the individual commands files
+Role to use for testing: 889619022583320666 - "RolesTest"
+const permissions = [
+	{
+		id: "224617799434108928",
+		type: "USER",
+		permission: true,
+	},
+]
+
+await command.permissions.set({ permissions })
+
+*/
 
 for (const file of commandFiles) {
 	const command = require(`./commands/${file}`)
