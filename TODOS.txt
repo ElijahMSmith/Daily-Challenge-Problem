@@ -1,5 +1,7 @@
-https://discord.com/oauth2/authorize?client_id=887492809806974976&scope=bot&permissions=2048
+https://discord.com/api/oauth2/authorize?client_id=887492809806974976&permissions=0&redirect_uri=https%3A%2F%2Fdiscord.com%2Fapi%2Foauth2%2Fauthorize%3Fclient_id%3D887492809806974976%26scope%3Dapplications.commands&scope=applications.commands%20bot
 URL to add bot
 
-
-TODO: Test the bot, fix the string formats to look more normal (concatenation)
+Features TODO:
+- Allow server admins to use slash commands to store which channels to use in their guild by name
+    - Need a command to get the channel info where it posts for each difficulty
+    - Need a command to update the channel for a particular difficulty (store by channel id)

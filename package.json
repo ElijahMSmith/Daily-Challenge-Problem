@@ -9,6 +9,10 @@
 		"node-schedule": "^2.0.0"
 	},
 	"devDependencies": {
-		"axios": "^0.21.4"
+		"@discordjs/builders": "^0.6.0",
+		"@discordjs/rest": "0.1.0-canary.0",
+		"axios": "^0.21.4",
+		"discord-api-types": "^0.23.1",
+		"dotenv": "^10.0.0"
 	}
 }

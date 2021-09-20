@@ -5,7 +5,9 @@
 		"allowJs": true,
 		"watch": true,
 		"lib": ["dom", "es2020"],
-		"outDir": "./src/build/"
+		"outDir": "./src/build/",
+		"resolveJsonModule": true,
+		"esModuleInterop": true
 	},
 	"types": ["chrome"],
 	"include": ["./src/*"]
