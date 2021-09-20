@@ -2,6 +2,7 @@
 	"name": "daily-challenge",
 	"description": "Find a daily LeetCode challenge problem to post to the server.",
 	"version": "0.0.1",
+	"main": "./src/build/index.js",
 	"author": "Eli",
 	"dependencies": {
 		"discord.js": "^13.1.0"
