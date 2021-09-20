@@ -1,6 +1,5 @@
-*.env
+.env
 *.js
 !/src/build/
 node_modules
 package-lock.json
-config.json

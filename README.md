@@ -1,1 +1,1 @@
-Add this bot: https://discord.com/oauth2/authorize?client_id=887492809806974976&scope=bot&permissions=2048
+Add this bot: https://discord.com/api/oauth2/authorize?client_id=887492809806974976&permissions=0&redirect_uri=https%3A%2F%2Fdiscord.com%2Fapi%2Foauth2%2Fauthorize%3Fclient_id%3D887492809806974976%26scope%3Dapplications.commands&scope=applications.commands%20bot
