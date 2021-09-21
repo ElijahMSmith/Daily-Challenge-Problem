@@ -10,5 +10,5 @@
 		"esModuleInterop": true
 	},
 	"types": ["chrome"],
-	"include": ["./src/*"]
+	"include": ["./src/*", "src/deploy-commands.ts"]
 }

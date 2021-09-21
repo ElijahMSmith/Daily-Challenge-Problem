@@ -1,22 +1,68 @@
-import { REST } from "@discordjs/rest"
+import { SlashCommandBuilder } from "@discordjs/builders"
 import { Routes } from "discord-api-types/v9"
-import fs from "fs"
+import { REST } from "@discordjs/rest"
+import path from "path"
 import dotenv from "dotenv"
 
-dotenv.config()
+dotenv.config({ path: path.resolve(__dirname, "../../.env") })
 
-const commands = []
-const commandFiles = fs
-	.readdirSync("./commands")
-	.filter((file) => file.endsWith(".js"))
-
-const clientId = "887492809806974976"
-const guildId = "889280418094927872"
+const commands = [
+	new SlashCommandBuilder()
+		.setName("ping")
+		.setDescription("Test bot latency in ms"),
+	new SlashCommandBuilder()
+		.setName("set-problem-channel")
+		.setDescription("Direct the challenge problem bot to specific channels")
+		.addStringOption((option) =>
+			option
+				.setName("difficulty")
+				.setDescription(
+					"Which problem difficulty to send to this channel"
+				)
+				.addChoices([
+					["easy", "easy"],
+					["medium", "medium"],
+					["hard", "hard"],
+				])
+				.setRequired(true)
+		)
+		.addStringOption((option) =>
+			option
+				.setName("channel-group")
+				.setDescription(
+					"The name of the channel group the desired channel is in"
+				)
+				.setRequired(true)
+		)
+		.addStringOption((option) =>
+			option
+				.setName("channel-name")
+				.setDescription("The name of the channel to use")
+				.setRequired(true)
+		),
+	new SlashCommandBuilder()
+		.setName("get-problem-channel")
+		.setDescription(
+			"Identifies which channel the problems of a given difficulty are going to"
+		)
+		.addStringOption((option) =>
+			option
+				.setName("difficulty")
+				.setDescription("Which difficulty problem stream to check")
+				.addChoices([
+					["easy", "easy"],
+					["medium", "medium"],
+					["hard", "hard"],
+				])
+				.setRequired(true)
+		),
+].map((command) => command.toJSON())
 
 /*
 
 I think this goes in the individual commands files
 Role to use for testing: 889619022583320666 - "RolesTest"
+
 const permissions = [
 	{
 		id: "224617799434108928",
@@ -29,23 +75,24 @@ await command.permissions.set({ permissions })
 
 */
 
-for (const file of commandFiles) {
-	const command = require(`./commands/${file}`)
-	commands.push(command.data.toJSON())
-}
-
 const rest = new REST({ version: "9" }).setToken(process.env.TOKEN)
 
-;(async () => {
+const reloadCommands = async () => {
 	try {
-		console.log("Started refreshing application (/) commands.")
+		await rest.put(
+			Routes.applicationGuildCommands(
+				process.env.CLIENT_ID,
+				process.env.GUILD_ID
+			),
+			{
+				body: commands,
+			}
+		)
 
-		await rest.put(Routes.applicationGuildCommands(clientId, guildId), {
-			body: commands,
-		})
-
-		console.log("Successfully reloaded application (/) commands.")
+		console.log("Successfully registered application commands.")
 	} catch (error) {
 		console.error(error)
 	}
-})()
+}
+
+reloadCommands()

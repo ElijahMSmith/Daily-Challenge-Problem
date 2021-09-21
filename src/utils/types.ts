@@ -18,3 +18,8 @@ export interface ProblemInfo {
 	dislikes: number
 	languages: []
 }
+
+export interface OutputChannel {
+	channelGroup: string
+	channelName: string
+}

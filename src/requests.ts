@@ -18,19 +18,16 @@ const shuffle = (array: object[]) => {
 	return array
 }
 
-export const getAllProblems = async (
-	axios,
-	lists: Problem[][]
-): Promise<void> => {
+export const getAllProblems = async (axios): Promise<Problem[][]> => {
 	const response = await axios({
 		method: "get",
 		url: "https://leetcode.com/api/problems/algorithms/",
 	})
 
 	let problems = response.data.stat_status_pairs
-	let easyProblems: Problem[] = lists[0],
-		mediumProblems: Problem[] = lists[1],
-		hardProblems: Problem[] = lists[2]
+	let easyProblems: Problem[] = [],
+		mediumProblems: Problem[] = [],
+		hardProblems: Problem[] = []
 
 	for (let prob of problems) {
 		// If we can't get a problem for everyone, throw it away
@@ -62,6 +59,8 @@ export const getAllProblems = async (
 	shuffle(easyProblems)
 	shuffle(mediumProblems)
 	shuffle(hardProblems)
+
+	return [easyProblems, mediumProblems, hardProblems]
 
 	/*
 	response.data: Return object structure and useful fields

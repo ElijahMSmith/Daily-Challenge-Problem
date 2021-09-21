@@ -1,0 +1,14 @@
+{
+  "easy": {
+    "channelGroup": "daily challenge problems",
+    "channelName": "extra"
+  },
+  "medium": {
+    "channelGroup": "text channels",
+    "channelName": "general"
+  },
+  "hard": {
+    "channelGroup": "daily challenge problems",
+    "channelName": "test"
+  }
+}
