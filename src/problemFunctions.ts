@@ -4,6 +4,7 @@ import {
 	TextChannel,
 	Message,
 	Client,
+	MessageEmbed,
 } from "discord.js"
 import { getDifficultyString, months, days } from "./utils/utils"
 import { OutputChannel, Problem } from "./utils/types"
@@ -112,9 +113,9 @@ export const sendProblems = async (
 			const today = new Date()
 			const stringDate = months[today.getMonth()] + " " + today.getDate()
 
-			const message: Message = await sendChannel.send(
-				getMessage(sendProblem)
-			)
+			const message: Message = await sendChannel.send({
+				embeds: [getProblemEmbed(sendProblem)],
+			})
 
 			const thread: ThreadChannel = await message.startThread({
 				name: "Discussion (" + stringDate + ") - " + sendProblem.name,
@@ -128,37 +129,25 @@ export const sendProblems = async (
 	}
 }
 
-const getMessage = (problem: Problem): string => {
+const getProblemEmbed = (problem: Problem): MessageEmbed => {
 	const today = new Date()
 	const difficultyString = getDifficultyString(problem.difficulty)
 
-	return (
-		"━━━━━━━━━━━━━━━━━━━━━━━━━\n" +
-		"__**\nDaily Challenge for " +
-		days[today.getDay()] +
-		" " +
-		months[today.getMonth()] +
-		" " +
-		today.getDate() +
-		", " +
-		today.getFullYear() +
-		"\n\n**__" +
-		"Problem Number " +
-		problem.id +
-		": " +
-		problem.name +
-		"\n" +
-		"Number of Submissions: " +
-		problem.numAttempts +
-		"\n" +
-		"Number Accepted: " +
-		problem.numAccepts +
-		" (" +
-		((problem.numAccepts / problem.numAttempts) * 100).toFixed(2) +
-		"%)\n" +
-		"Difficulty: " +
-		difficultyString +
-		"\n\n" +
-		problem.URL
-	)
+	return new MessageEmbed()
+		.setTitle(
+			`Daily Challenge for ${days[today.getDay()]} ${
+				months[today.getMonth()]
+			} ${today.getDate()} ${today.getFullYear()}`
+		)
+		.setURL(problem.URL)
+		.addField("Name", problem.name)
+		.addField("Number", problem.id.toString(), true)
+		.addField("Submissions", problem.numAttempts.toString(), true)
+		.addField(
+			"Accepted",
+			((problem.numAccepts / problem.numAttempts) * 100).toFixed(2) + "%",
+			true
+		)
+		.addField("Difficulty", difficultyString, true)
+		.addField("URL", problem.URL)
 }
