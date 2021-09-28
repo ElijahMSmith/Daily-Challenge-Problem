@@ -2,6 +2,7 @@ https://discord.com/api/oauth2/authorize?client_id=887492809806974976&permission
 URL to add bot
 
 Next items:
+- Add permissions to the commands
 - Figure out how to host this
 - Change guild ID if KH wants it
 - Make sure the job works, even if it's hosted somewhere

@@ -1,30 +1,49 @@
 import { runProcess } from "./problemFunctions"
 import { getAllProblems } from "./requests"
-import { Difficulty, OutputChannel, Problem } from "./utils/types"
-import { Client, Intents } from "discord.js"
+import { OutputChannel, Problem } from "./utils/types"
+import { ApplicationCommand, Client, Guild, Intents } from "discord.js"
 import dotenv from "dotenv"
 import path from "path"
 import fs from "fs"
-import { getDifficultyString } from "./utils/utils"
 
 dotenv.config()
 
 const schedule = require("node-schedule")
 const axios = require("axios").default
 const client = new Client({
-	intents: [Intents.FLAGS.GUILDS, Intents.FLAGS.GUILD_MESSAGES],
+	intents: [
+		Intents.FLAGS.GUILDS,
+		Intents.FLAGS.GUILD_MESSAGES,
+		Intents.FLAGS.GUILD_INTEGRATIONS,
+	],
 })
 
 // 24 hour clock
-const triggerHour: number = 9,
+let triggerHour: number = 9,
 	triggerMinute: number = 0
 
 let rawConfig = fs.readFileSync(
-	path.resolve(__dirname, "../../channel-config.json")
+	path.resolve(__dirname, "../../configs/channel-config.json")
 )
 let channelData: Record<string, OutputChannel> = JSON.parse(
 	rawConfig.toString()
 )
+
+rawConfig = fs.readFileSync(
+	path.resolve(__dirname, "../../configs/schedule-config.json")
+)
+let scheduleData = JSON.parse(rawConfig.toString())
+
+triggerHour = scheduleData.hour
+triggerMinute = scheduleData.minute
+
+rawConfig = fs.readFileSync(
+	path.resolve(__dirname, "../../configs/permissions-config.json")
+)
+let permissionsData = JSON.parse(rawConfig.toString())
+
+let setTimeRoles: string[] = permissionsData.setTime.havePermission
+let setChannelRoles: string[] = permissionsData.setTime.havePermission
 
 // --------- Problem Storage ---------
 
@@ -35,6 +54,8 @@ let easyIndex = 0,
 	hardIndex = 0
 
 // --------- Main execution ---------
+
+let runningJob: any
 
 const generateNextProblems = async (): Promise<Problem[]> => {
 	const newProblems: Problem[] = [
@@ -61,6 +82,28 @@ const generateNextProblems = async (): Promise<Problem[]> => {
 client.once("ready", async () => {
 	console.log("Daily Challenge Problem bot online.")
 
+	const guild: Guild = client.guilds.cache.get(process.env.GUILD_ID)
+	let guildCommands = (await guild.commands.fetch()).filter(
+		(command) =>
+			command.name === "set-problem-channel" ||
+			command.name === "set-send-time"
+	)
+
+	for (let collectionObj of guildCommands) {
+		const commandObj: ApplicationCommand = collectionObj[1]
+		const rolesList = commandObj.name === "set-problem-channel" ? setChannelRoles : setTimeRoles
+		guild.commands.permissions.add({
+			command: commandObj.id,
+			permissions: rolesList.map(roleId => {
+				return {
+					id: roleId,
+					type: "ROLE",
+					permission: true
+				}
+			})
+		})
+	}
+
 	console.log("Attempting to get problem set...")
 	const allProblems: Problem[][] = await getAllProblems(axios)
 
@@ -76,7 +119,7 @@ client.once("ready", async () => {
 	rule.hour = triggerHour
 	rule.minute = triggerMinute
 
-	schedule.scheduleJob(rule, () => {
+	runningJob = schedule.scheduleJob(rule, () => {
 		generateNextProblems()
 		runProcess(
 			client,
@@ -97,9 +140,9 @@ client.once("ready", async () => {
 		}`
 	)
 
-	// //temp: testing
+	//temp: testing
 	// const soon = new Date(Date.now() + 2000)
-	// const job = schedule.scheduleJob(soon, async () => {
+	// runningJob = schedule.scheduleJob(soon, async () => {
 	// 	console.log("Executing job")
 	// 	await generateNextProblems()
 	// 	await runProcess(
@@ -112,8 +155,8 @@ client.once("ready", async () => {
 	// 		channelData
 	// 	)
 	// })
-
-	console.log("Scheduled testing job")
+	//
+	// console.log("Scheduled testing job")
 })
 
 client.on("interactionCreate", async (interaction) => {
@@ -124,7 +167,6 @@ client.on("interactionCreate", async (interaction) => {
 	if (commandName === "ping") {
 		await interaction.reply(`Pong (${interaction.client.ws.ping}ms)`)
 	} else if (commandName === "set-problem-channel") {
-		// TODO - reply required to make interaction succeed
 		const difficulty: string = options
 			.getString("difficulty", true)
 			.toLowerCase()
@@ -146,7 +188,7 @@ client.on("interactionCreate", async (interaction) => {
 		channelData[difficulty].channelGroup = channelGroup
 		channelData[difficulty].channelName = channelName
 		fs.writeFileSync(
-			path.resolve(__dirname, "../../channel-config.json"),
+			path.resolve(__dirname, "../../configs/channel-config.json"),
 			JSON.stringify(channelData, null, 2)
 		)
 
@@ -180,6 +222,120 @@ client.on("interactionCreate", async (interaction) => {
 
 		interaction.reply(
 			`The ${difficulty} problems are being directed to the '#${correctChannelData.channelName}' in the group '${correctChannelData.channelGroup}'`
+		)
+	} else if (commandName === "set-send-time") {
+		const time: string = options
+			.getString("time", true)
+			.toLowerCase()
+			.replace(/ /g, "")
+
+		let newHour: number, newMinute: number, PM: boolean
+		try {
+			const semicolonIndex = time.indexOf(":")
+			newHour = Number(time.substring(0, semicolonIndex))
+			newMinute = Number(
+				time.substring(semicolonIndex + 1, time.length - 2)
+			)
+			PM = time.substring(time.length - 2) === "pm"
+
+			if (newHour < 1 || newHour > 12) {
+				interaction.reply(
+					"Unable to parse time: the hour must be between 1-12"
+				)
+				return
+			}
+
+			if (newMinute < 0 || newHour > 59) {
+				interaction.reply(
+					"Unable to parse time: the minute must be between 0-59"
+				)
+				return
+			}
+
+			if (
+				!(
+					time.substring(time.length - 2) === "am" ||
+					time.substring(time.length - 2) === "pm"
+				)
+			) {
+				interaction.reply(
+					"Unable to parse time: Must specify either am or pm."
+				)
+				return
+			}
+		} catch (e) {
+			interaction.reply(
+				"Illegal time provided! Use the format HH:MM AM/PM."
+			)
+		}
+
+		if (PM) newHour = newHour !== 12 ? newHour + 12 : newHour
+		else newHour = newHour === 12 ? 0 : newHour
+
+		triggerHour = newHour
+		triggerMinute = newMinute
+
+		fs.writeFileSync(
+			path.resolve(__dirname, "../../configs/schedule-config.json"),
+			JSON.stringify(
+				{ hour: triggerHour, minute: triggerMinute },
+				null,
+				2
+			)
+		)
+
+		const rule = new schedule.RecurrenceRule()
+		rule.hour = newHour
+		rule.minute = newMinute
+
+		const success = runningJob.reschedule(rule, () => {
+			generateNextProblems()
+			runProcess(
+				client,
+				[
+					easyProblems[easyIndex],
+					mediumProblems[mediumIndex],
+					hardProblems[hardIndex],
+				],
+				channelData
+			)
+		})
+
+		if (success) {
+			interaction.reply(
+				"Successfully updated the problems to send at " +
+					options.getString("time")
+			)
+			console.log(
+				"Successfully updated the problems to send at " +
+					options.getString("time")
+			)
+		} else {
+			interaction.reply(
+				"There was an issue scheduling the new process at " +
+					options.getString("time")
+			)
+			console.log(
+				"There was an issue scheduling the new process at " +
+					options.getString("time")
+			)
+		}
+	} else if (commandName === "get-send-time") {
+		const formattedHour = triggerHour % 12 === 0 ? 12 : triggerHour % 12
+		const formattedMinute = (triggerMinute < 10 ? "0" : "") + triggerMinute
+		const tag = triggerHour >= 12 ? "PM" : "AM"
+		interaction.reply(
+			"Problems release daily at " +
+				formattedHour +
+				":" +
+				formattedMinute +
+				tag
+		)
+
+		console.log(
+			"Date of next job invocation is: '" +
+				runningJob.nextInvocation() +
+				"'"
 		)
 	}
 })

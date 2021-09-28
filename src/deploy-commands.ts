@@ -39,7 +39,8 @@ const commands = [
 				.setName("channel-name")
 				.setDescription("The name of the channel to use")
 				.setRequired(true)
-		),
+		)
+		.setDefaultPermission(false),
 	new SlashCommandBuilder()
 		.setName("get-problem-channel")
 		.setDescription(
@@ -56,24 +57,24 @@ const commands = [
 				])
 				.setRequired(true)
 		),
+	new SlashCommandBuilder()
+		.setName("set-send-time")
+		.setDescription("Set which time the daily problems send out")
+		.addStringOption((option) =>
+			option
+				.setName("time")
+				.setDescription(
+					"When to send out new daily problems. Format: HH:MM AM/PM"
+				)
+				.setRequired(true)
+		)
+		.setDefaultPermission(false),
+	new SlashCommandBuilder()
+		.setName("get-send-time")
+		.setDescription(
+			"Find out what time the daily challenge problems are set to release"
+		),
 ].map((command) => command.toJSON())
-
-/*
-
-I think this goes in the individual commands files
-Role to use for testing: 889619022583320666 - "RolesTest"
-
-const permissions = [
-	{
-		id: "224617799434108928",
-		type: "USER",
-		permission: true,
-	},
-]
-
-await command.permissions.set({ permissions })
-
-*/
 
 const rest = new REST({ version: "9" }).setToken(process.env.TOKEN)
 
