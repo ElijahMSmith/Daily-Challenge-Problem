@@ -6,6 +6,7 @@ export enum Difficulty {
 
 export interface Problem {
 	name: string
+	slug: string
 	numAttempts: number
 	numAccepts: number
 	difficulty: Difficulty
@@ -13,10 +14,25 @@ export interface Problem {
 	id: number
 }
 
+export interface Topic {
+	name: string
+	slug: string
+	url: string
+}
+
+export interface SimilarProblemInfo {
+	name: string
+	slug: string
+	difficulty: string
+	url: string
+}
+
 export interface ProblemInfo {
 	likes: number
 	dislikes: number
-	languages: []
+	htmlContent: string
+	similarQuestions: SimilarProblemInfo[]
+	topics: Topic[]
 }
 
 export interface OutputChannel {

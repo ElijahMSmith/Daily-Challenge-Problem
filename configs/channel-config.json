@@ -4,11 +4,11 @@
     "channelName": "easy"
   },
   "medium": {
-    "channelGroup": "text channels",
-    "channelName": "general"
+    "channelGroup": "daily challenge problems",
+    "channelName": "medium"
   },
   "hard": {
     "channelGroup": "daily challenge problems",
-    "channelName": "test"
+    "channelName": "hard"
   }
 }

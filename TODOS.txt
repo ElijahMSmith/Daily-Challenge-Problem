@@ -1,8 +1,6 @@
 https://discord.com/api/oauth2/authorize?client_id=887492809806974976&permissions=0&redirect_uri=https%3A%2F%2Fdiscord.com%2Fapi%2Foauth2%2Fauthorize%3Fclient_id%3D887492809806974976%26scope%3Dapplications.commands&scope=applications.commands%20bot
 URL to add bot
 
-Next items:
-- Add permissions to the commands
-- Figure out how to host this
-- Change guild ID if KH wants it
-- Make sure the job works, even if it's hosted somewhere
+- Preview of problem description in an ephemeral message
+- Any way to get the information about companies that used the question?
+- Mention suggested problems as either free or paid (will need to look up somewhere)

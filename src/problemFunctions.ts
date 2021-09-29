@@ -7,11 +7,13 @@ import {
 	MessageEmbed,
 } from "discord.js"
 import { getDifficultyString, months, days } from "./utils/utils"
-import { OutputChannel, Problem } from "./utils/types"
+import { OutputChannel, Problem, ProblemInfo } from "./utils/types"
+import { getAdditionalProblemInfo } from "./requests"
 
 // --------- Execution Functions ---------
 
 export const runProcess = async function (
+	axios,
 	client: Client,
 	currentProblems: Problem[],
 	channelData: Record<string, OutputChannel>
@@ -29,7 +31,7 @@ export const runProcess = async function (
 	}
 
 	const postChannels: TextChannel[] = getChannels(client, channelData)
-	sendProblems(postChannels, currentProblems, channelData)
+	sendProblems(axios, postChannels, currentProblems, channelData)
 }
 
 export const getChannels = (
@@ -85,6 +87,7 @@ export const getChannels = (
 }
 
 export const sendProblems = async (
+	axios,
 	postChannels: TextChannel[],
 	problemData: Problem[],
 	channelDataObject: Record<string, OutputChannel>
@@ -114,7 +117,7 @@ export const sendProblems = async (
 			const stringDate = months[today.getMonth()] + " " + today.getDate()
 
 			const message: Message = await sendChannel.send({
-				embeds: [getProblemEmbed(sendProblem)],
+				embeds: [await getProblemEmbed(axios, sendProblem)],
 			})
 
 			const thread: ThreadChannel = await message.startThread({
@@ -129,10 +132,13 @@ export const sendProblems = async (
 	}
 }
 
-const getProblemEmbed = (problem: Problem): MessageEmbed => {
+const getProblemEmbed = async (
+	axios,
+	problem: Problem
+): Promise<MessageEmbed> => {
 	const today = new Date()
 	const difficultyString = getDifficultyString(problem.difficulty)
-
+	const additionalProblemInfo = await getAdditionalProblemInfo(axios, problem)
 	return new MessageEmbed()
 		.setTitle(
 			`Daily Challenge for ${days[today.getDay()]} ${
@@ -140,14 +146,64 @@ const getProblemEmbed = (problem: Problem): MessageEmbed => {
 			} ${today.getDate()} ${today.getFullYear()}`
 		)
 		.setURL(problem.URL)
-		.addField("Name", problem.name)
-		.addField("Number", problem.id.toString(), true)
+		.addField("Problem", "(" + problem.id + ") " + problem.name)
+		.addField("URL", problem.URL)
 		.addField("Submissions", problem.numAttempts.toString(), true)
+		.addField("Accepted", problem.numAccepts.toString(), true)
 		.addField(
-			"Accepted",
+			"Accepted %",
 			((problem.numAccepts / problem.numAttempts) * 100).toFixed(2) + "%",
 			true
 		)
 		.addField("Difficulty", difficultyString, true)
-		.addField("URL", problem.URL)
+		.addField("Likes", additionalProblemInfo.likes.toString(), true)
+		.addField("Dislike", additionalProblemInfo.dislikes.toString(), true)
+		.addField("Tagged Topics", generateTagsString(additionalProblemInfo))
+		.addField(
+			"Similar Problems",
+			generateSimilarString(additionalProblemInfo)
+		)
 }
+
+const generateSimilarString = (info: ProblemInfo): string => {
+	let build: string = ""
+	for (let i = 0; i < info.similarQuestions.length; i++) {
+		const q = info.similarQuestions[i]
+		build += q.difficulty + " - " + q.url + "\n"
+	}
+	return build == "" ? "None" : build
+}
+
+const generateTagsString = (info: ProblemInfo): string => {
+	let build: string = ""
+	for (let i = 0; i < info.topics.length; i++) {
+		const topic = info.topics[i]
+		build += topic.name + " - " + topic.url + "\n"
+	}
+	return build == "" ? "None" : build
+}
+
+/*
+
+export interface Topic {
+	name: string
+	slug: string
+	url: string
+}
+
+export interface SimilarProblemInfo {
+	name: string
+	slug: string
+	difficulty: Difficulty
+	url: string
+}
+
+export interface ProblemInfo {
+	likes: number
+	dislikes: number
+	htmlContent: string
+	similarQuestions: SimilarProblemInfo[]
+	topics: Topic[]
+}
+
+*/

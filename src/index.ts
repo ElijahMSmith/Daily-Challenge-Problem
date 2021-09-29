@@ -1,6 +1,6 @@
 import { runProcess } from "./problemFunctions"
-import { getAllProblems } from "./requests"
-import { OutputChannel, Problem } from "./utils/types"
+import { getAllProblems, getAdditionalProblemInfo } from "./requests"
+import { OutputChannel, Problem, ProblemInfo } from "./utils/types"
 import { ApplicationCommand, Client, Guild, Intents } from "discord.js"
 import dotenv from "dotenv"
 import path from "path"
@@ -91,16 +91,19 @@ client.once("ready", async () => {
 
 	for (let collectionObj of guildCommands) {
 		const commandObj: ApplicationCommand = collectionObj[1]
-		const rolesList = commandObj.name === "set-problem-channel" ? setChannelRoles : setTimeRoles
+		const rolesList =
+			commandObj.name === "set-problem-channel"
+				? setChannelRoles
+				: setTimeRoles
 		guild.commands.permissions.add({
 			command: commandObj.id,
-			permissions: rolesList.map(roleId => {
+			permissions: rolesList.map((roleId) => {
 				return {
 					id: roleId,
 					type: "ROLE",
-					permission: true
+					permission: true,
 				}
-			})
+			}),
 		})
 	}
 
@@ -122,6 +125,7 @@ client.once("ready", async () => {
 	runningJob = schedule.scheduleJob(rule, () => {
 		generateNextProblems()
 		runProcess(
+			axios,
 			client,
 			[
 				easyProblems[easyIndex],
@@ -135,7 +139,7 @@ client.once("ready", async () => {
 	console.log(
 		`Scheduled process for ${
 			triggerHour % 12 == 0 ? 12 : triggerHour % 12
-		}:${triggerMinute}${triggerMinute < 10 ? "0" : ""} ${
+		}:${triggerMinute < 10 ? "0" : ""}${triggerMinute} ${
 			triggerHour < 12 ? "AM" : "PM"
 		}`
 	)
@@ -291,6 +295,7 @@ client.on("interactionCreate", async (interaction) => {
 		const success = runningJob.reschedule(rule, () => {
 			generateNextProblems()
 			runProcess(
+				axios,
 				client,
 				[
 					easyProblems[easyIndex],
