@@ -40,7 +40,7 @@ const commands = [
 				.setDescription("The name of the channel to use")
 				.setRequired(true)
 		)
-		.setDefaultPermission(true),
+		.setDefaultPermission(false),
 	new SlashCommandBuilder()
 		.setName("get-problem-channel")
 		.setDescription(
@@ -68,7 +68,7 @@ const commands = [
 				)
 				.setRequired(true)
 		)
-		.setDefaultPermission(true),
+		.setDefaultPermission(false),
 	new SlashCommandBuilder()
 		.setName("get-send-time")
 		.setDescription(
