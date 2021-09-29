@@ -83,9 +83,6 @@ client.once("ready", async () => {
 	console.log("Daily Challenge Problem bot online.")
 
 	const guild: Guild = client.guilds.cache.get(process.env.GUILD_ID)
-	console.log(client.guilds)
-	console.log(client.guilds.cache)
-	console.log(guild)
 	let guildCommands = (await guild.commands.fetch()).filter(
 		(command) =>
 			command.name === "set-problem-channel" ||
