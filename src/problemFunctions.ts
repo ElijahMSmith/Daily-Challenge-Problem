@@ -5,6 +5,7 @@ import {
 	Message,
 	Client,
 	MessageEmbed,
+	Guild,
 } from "discord.js"
 import { getDifficultyString, months, days } from "./utils/utils"
 import { OutputChannel, Problem, ProblemInfo } from "./utils/types"
@@ -43,7 +44,9 @@ export const getChannels = (
 	// Go back through and look for all channels 'easy', 'medium', and 'hard' with
 	// .parentId = .id of the category channel
 
-	const cm = client.channels.cache
+	const guild: Guild = client.guilds.cache.get(process.env.GUILD_ID)
+	const cm = guild.channels.cache
+
 	const allChannelData = [
 		channelData.easy,
 		channelData.medium,

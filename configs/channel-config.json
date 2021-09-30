@@ -1,14 +1,14 @@
 {
-  "easy": {
-    "channelGroup": "daily challenge problems",
-    "channelName": "easy"
-  },
-  "medium": {
-    "channelGroup": "daily challenge problems",
-    "channelName": "medium"
-  },
-  "hard": {
-    "channelGroup": "daily challenge problems",
-    "channelName": "hard"
-  }
+	"easy": {
+		"channelGroup": "━━━  int main()  ━━━",
+		"channelName": "💭｜daily-challenges"
+	},
+	"medium": {
+		"channelGroup": "━━━  int main()  ━━━",
+		"channelName": "💭｜daily-challenges"
+	},
+	"hard": {
+		"channelGroup": "━━━  int main()  ━━━",
+		"channelName": "💭｜daily-challenges"
+	}
 }

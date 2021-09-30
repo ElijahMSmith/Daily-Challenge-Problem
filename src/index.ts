@@ -122,6 +122,7 @@ client.once("ready", async () => {
 	const rule = new schedule.RecurrenceRule()
 	rule.hour = triggerHour
 	rule.minute = triggerMinute
+	rule.tz = "America/New_York"
 
 	runningJob = schedule.scheduleJob(rule, () => {
 		generateNextProblems()
@@ -325,6 +326,7 @@ client.on("interactionCreate", async (interaction) => {
 		const rule = new schedule.RecurrenceRule()
 		rule.hour = newHour
 		rule.minute = newMinute
+		rule.tz = "America/New_York"
 
 		const success = runningJob.reschedule(rule, () => {
 			generateNextProblems()
@@ -347,7 +349,9 @@ client.on("interactionCreate", async (interaction) => {
 			)
 			console.log(
 				"Successfully updated the problems to send at " +
-					options.getString("time")
+					options.getString("time") +
+					"\nJob runs at " +
+					runningJob.nextInvocation()
 			)
 		} else {
 			interaction.reply(
