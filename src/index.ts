@@ -83,7 +83,8 @@ client.once("ready", async () => {
 	console.log("Daily Challenge Problem bot online.")
 
 	const guild: Guild = client.guilds.cache.get(process.env.GUILD_ID)
-	let guildCommands = (await guild.commands.fetch()).filter(
+	const allCommands = await guild.commands.fetch()
+	let guildCommands = allCommands.filter(
 		(command) =>
 			command.name === "set-problem-channel" ||
 			command.name === "set-send-time"
@@ -189,6 +190,15 @@ client.on("interactionCreate", async (interaction) => {
 			return
 		}
 
+		let testConf = fs.readFileSync(
+			path.resolve(__dirname, "../../configs/channel-config.json")
+		)
+		let testChannelData: Record<string, OutputChannel> = JSON.parse(
+			testConf.toString()
+		)
+
+		console.log("Previous Channel Data: ", testChannelData)
+
 		channelData[difficulty].channelGroup = channelGroup
 		channelData[difficulty].channelName = channelName
 		fs.writeFileSync(
@@ -199,6 +209,14 @@ client.on("interactionCreate", async (interaction) => {
 		interaction.reply(
 			`Successfully updated ${difficulty} problems output channel to '#${channelName}' in group '${channelGroup}'`
 		)
+
+		testConf = fs.readFileSync(
+			path.resolve(__dirname, "../../configs/channel-config.json")
+		)
+
+		testChannelData = JSON.parse(testConf.toString())
+
+		console.log("New Channel Data: ", testChannelData)
 	} else if (commandName === "get-problem-channel") {
 		const difficulty: string = options
 			.getString("difficulty", true)
@@ -279,6 +297,14 @@ client.on("interactionCreate", async (interaction) => {
 		triggerHour = newHour
 		triggerMinute = newMinute
 
+		let testConf = fs.readFileSync(
+			path.resolve(__dirname, "../../configs/schedule-config.json")
+		)
+
+		let testScheduleData = JSON.parse(testConf.toString())
+
+		console.log("Previous Schedule Data: ", testScheduleData)
+
 		fs.writeFileSync(
 			path.resolve(__dirname, "../../configs/schedule-config.json"),
 			JSON.stringify(
@@ -287,6 +313,14 @@ client.on("interactionCreate", async (interaction) => {
 				2
 			)
 		)
+
+		testConf = fs.readFileSync(
+			path.resolve(__dirname, "../../configs/schedule-config.json")
+		)
+
+		testScheduleData = JSON.parse(testConf.toString())
+
+		console.log("New Schedule Data: ", testScheduleData)
 
 		const rule = new schedule.RecurrenceRule()
 		rule.hour = newHour
