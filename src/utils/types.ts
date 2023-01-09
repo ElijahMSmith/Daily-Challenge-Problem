@@ -34,8 +34,3 @@ export interface ProblemInfo {
 	similarQuestions: SimilarProblemInfo[]
 	topics: Topic[]
 }
-
-export interface OutputChannel {
-	channelGroup: string
-	channelName: string
-}

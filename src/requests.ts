@@ -1,4 +1,5 @@
 import { Problem, ProblemInfo, Topic, SimilarProblemInfo } from "./utils/types"
+import axios from "axios"
 
 const shuffle = (array: object[]) => {
 	let currentIndex: number = array.length,
@@ -95,11 +96,8 @@ export const getAllProblems = async (axios): Promise<Problem[][]> => {
 }
 
 export const getAdditionalProblemInfo = async (
-	axios,
 	problem: Problem
 ): Promise<ProblemInfo> => {
-	//TODO: Get more information about the problem: description, likes, dislikes, etc?
-	//Will need to query the graphql that the site does when you load the problem page
 	const response = await axios({
 		method: "post",
 		url: "https://leetcode.com/graphql",
@@ -114,20 +112,11 @@ export const getAdditionalProblemInfo = async (
 
 	const questionData = response.data.data.question
 
-	/*
-	
-	likes: number
-	dislikes: number
-	htmlContent: string
-	similarQuestions: SimilarProblemInfo[]
-	topicTags: Topic[]
-
-	*/
-
 	let similarQuestionsArray: SimilarProblemInfo[] = []
 	const simQsString = questionData.similarQuestions
 		? questionData.similarQuestions
 		: "[]"
+
 	if (simQsString && simQsString != "[]") {
 		// There are topics to parse
 		// Remove [], then split the objects
@@ -165,7 +154,6 @@ export const getAdditionalProblemInfo = async (
 		topics: topicsArray,
 	}
 
-	//console.log(ret)
 	return ret
 
 	/*

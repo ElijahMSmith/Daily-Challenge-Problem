@@ -1,24 +1,24 @@
 import {
 	ThreadChannel,
-	GuildChannel,
 	TextChannel,
 	Message,
 	Client,
-	MessageEmbed,
 	Guild,
+	ChannelType,
 } from "discord.js"
 import { getDifficultyString, months, days } from "./utils/utils"
-import { OutputChannel, Problem, ProblemInfo } from "./utils/types"
+import { Problem, ProblemInfo } from "./utils/types"
 import { getAdditionalProblemInfo } from "./requests"
+import { EmbedBuilder } from "@discordjs/builders"
 
 // --------- Execution Functions ---------
 
 export const runProcess = async function (
-	axios,
 	client: Client,
-	currentProblems: Problem[],
-	channelData: Record<string, OutputChannel>
+	currentProblems: Problem[]
 ): Promise<void> {
+	console.log("Token: " + client.token)
+
 	console.log("-------------------------------------")
 	console.log("Selected Problem Data: ")
 	console.log(currentProblems)
@@ -31,182 +31,131 @@ export const runProcess = async function (
 		return
 	}
 
-	const postChannels: TextChannel[] = getChannels(client, channelData)
-	sendProblems(axios, postChannels, currentProblems, channelData)
-}
-
-export const getChannels = (
-	client: Client,
-	channelData: Record<string, OutputChannel>
-): TextChannel[] => {
-	// Go through once and look for channel with name 'Daily Challenge Problems' and type 'GUILD_CATEGORY'
-	// Get the .id of that category
-	// Go back through and look for all channels 'easy', 'medium', and 'hard' with
-	// .parentId = .id of the category channel
-
-	const guild: Guild = client.guilds.cache.get(process.env.GUILD_ID)
-	const cm = guild.channels.cache
-
-	const allChannelData = [
-		channelData.easy,
-		channelData.medium,
-		channelData.hard,
-	]
-	const returnChannels = []
-
-	for (let i = 0; i < 3; i++) {
-		const channelData = allChannelData[i]
-
-		console.log("Looking for channel with matching data: ", channelData)
-
-		const parentCategory: GuildChannel = <GuildChannel>(
-			cm.find(
-				(channel: GuildChannel) =>
-					channel.name.toLowerCase() ===
-						channelData.channelGroup.toLowerCase() &&
-					channel.type === "GUILD_CATEGORY"
-			)
-		)
-
-		if (!parentCategory) {
-			returnChannels.push(undefined)
-			continue
-		}
-
-		const channelObject: TextChannel = <TextChannel>(
-			cm.find(
-				(channel: GuildChannel) =>
-					channel.name.toLowerCase() ===
-						channelData.channelName.toLowerCase() &&
-					channel.parentId === parentCategory.id &&
-					channel.type === "GUILD_TEXT"
-			)
-		)
-
-		returnChannels.push(channelObject)
-	}
-
-	return returnChannels
+	client.guilds.cache.forEach((guild) => sendProblems(currentProblems, guild))
 }
 
 export const sendProblems = async (
-	axios,
-	postChannels: TextChannel[],
 	problemData: Problem[],
-	channelDataObject: Record<string, OutputChannel>
+	guild: Guild
 ): Promise<void> => {
 	// Index 0 is easy problem, index 1 is medium problem, index 2 is hard problem
-
 	for (let i = 0; i < 3; i++) {
-		const sendChannel = postChannels[i]
 		const sendProblem = problemData[i]
 
-		const allChannelData = [
-			channelDataObject.easy,
-			channelDataObject.medium,
-			channelDataObject.hard,
-		]
+		const allChannels = await guild.channels.fetch()
+		const sendChannel = allChannels.find(
+			(channel) => channel.name === process.env.CHANNEL_NAME
+		)
 
 		if (!sendChannel) {
 			console.log(
-				`Couldn't find the ${getDifficultyString(
-					sendProblem.difficulty
-				)} text channel '${
-					allChannelData[i].channelName
-				}' in the category "${allChannelData[i].channelGroup}"!`
+				`Couldn't find the required text channel in guild with id ${guild.id}!`
 			)
-		} else {
-			const today = new Date()
-			const stringDate = months[today.getMonth()] + " " + today.getDate()
-
-			const message: Message = await sendChannel.send({
-				embeds: [await getProblemEmbed(axios, sendProblem)],
-			})
-
-			const thread: ThreadChannel = await message.startThread({
-				name: "Discussion (" + stringDate + ") - " + sendProblem.name,
-				autoArchiveDuration: 1440, // One day
-			})
-
-			thread.send(
-				"This thread will archive after 24h of inactivity.\n\n**Discuss!**"
-			)
+			return
 		}
+
+		// Using a type guard to narrow down the correct type of TextChannel
+		if (
+			!((sendChannel): sendChannel is TextChannel =>
+				sendChannel.type === ChannelType.GuildText)(sendChannel)
+		) {
+			console.log(
+				`Found the required channel in guild with id ${guild.id} but it's not a text channel!`
+			)
+			return
+		}
+
+		const today = new Date()
+		const stringDate = months[today.getMonth()] + " " + today.getDate()
+
+		const message: Message = await sendChannel.send({
+			embeds: [await getProblemEmbed(sendProblem)],
+		})
+
+		const thread: ThreadChannel = await message.startThread({
+			name: "Discussion (" + stringDate + ") - " + sendProblem.name,
+			autoArchiveDuration: 1440, // One day
+		})
+
+		thread.send(
+			"This thread will archive after 24h of inactivity.\n\n**Discuss!**"
+		)
 	}
 }
 
-const getProblemEmbed = async (
-	axios,
-	problem: Problem
-): Promise<MessageEmbed> => {
+const getProblemEmbed = async (problem: Problem): Promise<EmbedBuilder> => {
 	const today = new Date()
 	const difficultyString = getDifficultyString(problem.difficulty)
-	const additionalProblemInfo = await getAdditionalProblemInfo(axios, problem)
-	return new MessageEmbed()
+	const additionalProblemInfo = await getAdditionalProblemInfo(problem)
+	return new EmbedBuilder()
 		.setTitle(
 			`Daily Challenge for ${days[today.getDay()]} ${
 				months[today.getMonth()]
 			} ${today.getDate()} ${today.getFullYear()}`
 		)
 		.setURL(problem.URL)
-		.addField("Problem", "(" + problem.id + ") " + problem.name)
-		.addField("URL", problem.URL)
-		.addField("Submissions", problem.numAttempts.toString(), true)
-		.addField("Accepted", problem.numAccepts.toString(), true)
-		.addField(
-			"Accepted %",
-			((problem.numAccepts / problem.numAttempts) * 100).toFixed(2) + "%",
-			true
-		)
-		.addField("Difficulty", difficultyString, true)
-		.addField("Likes", additionalProblemInfo.likes.toString(), true)
-		.addField("Dislike", additionalProblemInfo.dislikes.toString(), true)
-		.addField("Tagged Topics", generateTagsString(additionalProblemInfo))
-		.addField(
-			"Similar Problems",
-			generateSimilarString(additionalProblemInfo)
+		.addFields(
+			{ name: "Problem", value: "(" + problem.id + ") " + problem.name },
+			{ name: "URL", value: problem.URL },
+			{
+				name: "Submissions",
+				value: problem.numAttempts.toString(),
+				inline: true,
+			},
+			{
+				name: "Accepted",
+				value: problem.numAccepts.toString(),
+				inline: true,
+			},
+			{
+				name: "Accepted %",
+				value:
+					((problem.numAccepts / problem.numAttempts) * 100).toFixed(
+						2
+					) + "%",
+				inline: true,
+			},
+			{ name: "Difficulty", value: difficultyString, inline: true },
+			{
+				name: "Likes",
+				value: additionalProblemInfo.likes.toString(),
+				inline: true,
+			},
+			{
+				name: "Dislike",
+				value: additionalProblemInfo.dislikes.toString(),
+				inline: true,
+			},
+			{
+				name: "Tagged Topics",
+				value: generateTagsString(additionalProblemInfo),
+			},
+			{
+				name: "Similar Problems",
+				value: generateSimilarString(additionalProblemInfo),
+			}
 		)
 }
 
 const generateSimilarString = (info: ProblemInfo): string => {
-	let build: string = ""
-	for (let i = 0; i < info.similarQuestions.length; i++) {
-		const q = info.similarQuestions[i]
-		build += q.difficulty + " - " + q.url + "\n"
-	}
-	return build == "" ? "None" : build
+	const build = info.similarQuestions.reduce((accumulated, question) => {
+		if (!question)
+			throw new Error(
+				"Trying to generate string of similar problems from an undefined ProblemInfo object. Full similarQuestions array."
+			)
+		return accumulated + question.difficulty + " - " + question.url + "\n"
+	}, "")
+	return build === "" ? "None" : build
 }
 
 const generateTagsString = (info: ProblemInfo): string => {
-	let build: string = ""
-	for (let i = 0; i < info.topics.length; i++) {
-		const topic = info.topics[i]
-		build += topic.name + " - " + topic.url + "\n"
-	}
-	return build == "" ? "None" : build
+	const build = info.topics.reduce((accumulated, topic) => {
+		if (!topic)
+			throw new Error(
+				"Trying to generate string of topics from an undefined ProblemInfo object."
+			)
+
+		return accumulated + topic.name + " - " + topic.url + "\n"
+	}, "")
+	return build === "" ? "None" : build
 }
-
-/*
-
-export interface Topic {
-	name: string
-	slug: string
-	url: string
-}
-
-export interface SimilarProblemInfo {
-	name: string
-	slug: string
-	difficulty: Difficulty
-	url: string
-}
-
-export interface ProblemInfo {
-	likes: number
-	dislikes: number
-	htmlContent: string
-	similarQuestions: SimilarProblemInfo[]
-	topics: Topic[]
-}
-
-*/
