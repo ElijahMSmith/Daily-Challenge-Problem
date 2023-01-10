@@ -69,6 +69,4 @@ client.once("ready", async () => {
 	//process.exit()
 })
 
-console.log(process.env.TOKEN)
-
 client.login(process.env.TOKEN)

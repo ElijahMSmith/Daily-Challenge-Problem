@@ -31,7 +31,8 @@ export const runProcess = async function (
 		return
 	}
 
-	client.guilds.cache.forEach((guild) => sendProblems(currentProblems, guild))
+	for (let guildRecord of client.guilds.cache)
+		await sendProblems(currentProblems, guildRecord[1])
 }
 
 export const sendProblems = async (
@@ -43,8 +44,8 @@ export const sendProblems = async (
 		const sendProblem = problemData[i]
 
 		const allChannels = await guild.channels.fetch()
-		const sendChannel = allChannels.find(
-			(channel) => channel.name === process.env.CHANNEL_NAME
+		const sendChannel = allChannels.find((channel) =>
+			channel.name.includes(process.env.CHANNEL_NAME)
 		)
 
 		if (!sendChannel) {
@@ -68,16 +69,18 @@ export const sendProblems = async (
 		const today = new Date()
 		const stringDate = months[today.getMonth()] + " " + today.getDate()
 
+		console.log("Sending out to guild " + guild.id)
 		const message: Message = await sendChannel.send({
 			embeds: [await getProblemEmbed(sendProblem)],
 		})
 
+		console.log("Starting thread on sent problem")
 		const thread: ThreadChannel = await message.startThread({
 			name: "Discussion (" + stringDate + ") - " + sendProblem.name,
 			autoArchiveDuration: 1440, // One day
 		})
 
-		thread.send(
+		await thread.send(
 			"This thread will archive after 24h of inactivity.\n\n**Discuss!**"
 		)
 	}
