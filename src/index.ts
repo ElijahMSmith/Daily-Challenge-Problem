@@ -14,6 +14,12 @@ functions.http("sendTodaysProblems", (req, res) => {
 	})
 
 	const pickTodaysProblems = (problemData: Problem[][]): Problem[] => {
+		problemData.forEach((difficultySet) => {
+			difficultySet.sort((probA, probB) => {
+				return probA.id - probB.id
+			})
+		})
+
 		const [easyProblems, mediumProblems, hardProblems] = problemData
 		const index = Math.floor(
 			(new Date().getTime() - new Date(0).getTime()) / 1000 / 60 / 60 / 24

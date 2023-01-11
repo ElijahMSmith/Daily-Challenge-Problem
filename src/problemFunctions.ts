@@ -81,7 +81,7 @@ export const sendProblems = async (
 		})
 
 		await thread.send(
-			"This thread will archive after 24h of inactivity.\n\n**Discuss!**"
+			"This thread will archive after 24h of inactivity.\n\nPlease wrap any code in a spoiler (with |\\|code|\\|) or a file upload so that others can solve this on their own.\n\n**Good luck!**"
 		)
 	}
 }
