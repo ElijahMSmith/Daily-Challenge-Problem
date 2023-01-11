@@ -3,7 +3,6 @@
 		"target": "ESNext",
 		"module": "commonjs",
 		"allowJs": true,
-		"lib": ["dom", "ESNext"],
 		"outDir": "dist",
 		"resolveJsonModule": true,
 		"esModuleInterop": true
