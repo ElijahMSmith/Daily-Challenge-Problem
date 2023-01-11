@@ -11,22 +11,17 @@ const client = new Client({
 	intents: [GatewayIntentBits.Guilds],
 })
 
-// --------- Problem Storage ---------
-
-let easyProblems: Problem[], mediumProblems: Problem[], hardProblems: Problem[]
-
-let easyIndex = 0,
-	mediumIndex = 0,
-	hardIndex = 0
-
 // --------- Main execution ---------
 
-const generateNextProblems = (): Problem[] => {
-	const newProblems: Problem[] = [
-		easyProblems[easyIndex],
-		mediumProblems[mediumIndex],
-		hardProblems[hardIndex],
-	]
+const pickTodaysProblems = (problemData: Problem[][]): Problem[] => {
+	const [easyProblems, mediumProblems, hardProblems] = problemData
+	const index = Math.floor(
+		(new Date().getTime() - new Date(0).getTime()) / 1000 / 60 / 60 / 24
+	)
+
+	const easyIndex = index % easyProblems.length,
+		mediumIndex = index % mediumProblems.length,
+		hardIndex = index % hardProblems.length
 
 	console.log(
 		`Got the ${easyIndex + 1}/${easyProblems.length} easy problem, ${
@@ -36,11 +31,11 @@ const generateNextProblems = (): Problem[] => {
 		} hard problem`
 	)
 
-	easyIndex = (easyIndex + 1) % easyProblems.length
-	mediumIndex = (mediumIndex + 1) % mediumProblems.length
-	hardIndex = (hardIndex + 1) % hardProblems.length
-
-	return newProblems
+	return [
+		easyProblems[easyIndex],
+		mediumProblems[mediumIndex],
+		hardProblems[hardIndex],
+	]
 }
 
 client.once("ready", async () => {
@@ -49,20 +44,11 @@ client.once("ready", async () => {
 	console.log("Attempting to get problem set...")
 	const allProblems: Problem[][] = await getAllProblems(axios)
 
-	easyProblems = allProblems[0]
-	mediumProblems = allProblems[1]
-	hardProblems = allProblems[2]
-
 	console.log(
-		`Retrieved ${easyProblems.length} easy problems, ${mediumProblems.length} medium problems, and ${hardProblems.length} hard problems`
+		`Retrieved ${allProblems[0].length} easy problems, ${allProblems[1].length} medium problems, and ${allProblems[2].length} hard problems`
 	)
 
-	generateNextProblems()
-	await runProcess(client, [
-		easyProblems[easyIndex],
-		mediumProblems[mediumIndex],
-		hardProblems[hardIndex],
-	])
+	await runProcess(client, pickTodaysProblems(allProblems))
 
 	console.log("Finished sending problems, powering down.")
 	client.destroy()
