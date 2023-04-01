@@ -1,8 +1,4 @@
-export enum Difficulty {
-	EASY = 1,
-	MEDIUM = 2,
-	HARD = 3,
-}
+export type Difficulty = "Easy" | "Medium" | "Hard"
 
 export interface Problem {
 	name: string

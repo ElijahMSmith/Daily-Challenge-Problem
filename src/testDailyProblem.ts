@@ -9,8 +9,8 @@ const client = new Client({
 })
 
 client.once("ready", async () => {
-	await getDailyProblem()
-	console.log("Finished")
+	const problem = await getDailyProblem()
+	console.log(problem)
 })
 
 client.login(process.env.TOKEN)

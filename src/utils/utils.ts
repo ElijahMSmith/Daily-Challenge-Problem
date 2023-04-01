@@ -24,11 +24,3 @@ export const months = [
 	"November",
 	"December",
 ]
-
-export const getDifficultyString = (diff: number): string => {
-	return diff === Difficulty.EASY
-		? "Easy"
-		: diff === Difficulty.MEDIUM
-		? "Medium"
-		: "Hard"
-}

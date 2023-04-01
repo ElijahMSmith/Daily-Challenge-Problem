@@ -6,7 +6,7 @@ import {
 	Guild,
 	ChannelType,
 } from "discord.js"
-import { getDifficultyString, months, days } from "./utils/utils"
+import { months, days } from "./utils/utils"
 import { Problem, ProblemInfo } from "./utils/types"
 import { getAdditionalProblemInfo } from "./requests"
 import { EmbedBuilder } from "@discordjs/builders"
@@ -88,7 +88,6 @@ export const sendProblems = async (
 
 const getProblemEmbed = async (problem: Problem): Promise<EmbedBuilder> => {
 	const today = new Date()
-	const difficultyString = getDifficultyString(problem.difficulty)
 	const additionalProblemInfo = await getAdditionalProblemInfo(problem)
 	return new EmbedBuilder()
 		.setTitle(
@@ -118,7 +117,7 @@ const getProblemEmbed = async (problem: Problem): Promise<EmbedBuilder> => {
 					) + "%",
 				inline: true,
 			},
-			{ name: "Difficulty", value: difficultyString, inline: true },
+			{ name: "Difficulty", value: problem.difficulty, inline: true },
 			{
 				name: "Likes",
 				value: additionalProblemInfo.likes.toString(),
