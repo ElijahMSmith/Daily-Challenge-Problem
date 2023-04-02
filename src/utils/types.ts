@@ -1,3 +1,5 @@
+import { ProblemDifficulty } from "leetcode-query"
+
 export type Difficulty = "Easy" | "Medium" | "Hard"
 
 export interface Problem {
@@ -5,7 +7,11 @@ export interface Problem {
 	slug: string
 	numAttempts: number
 	numAccepts: number
-	difficulty: Difficulty
+	difficulty: ProblemDifficulty
+	likes: number
+	dislikes: number
+	tagged: Topic[]
+	similar: SimilarProblemInfo[]
 	URL: string
 	id: number
 }
@@ -21,12 +27,4 @@ export interface SimilarProblemInfo {
 	slug: string
 	difficulty: string
 	url: string
-}
-
-export interface ProblemInfo {
-	likes: number
-	dislikes: number
-	htmlContent: string
-	similarQuestions: SimilarProblemInfo[]
-	topics: Topic[]
 }

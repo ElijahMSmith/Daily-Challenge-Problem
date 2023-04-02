@@ -1,5 +1,3 @@
-import { Difficulty } from "./types"
-
 export const days = [
 	"Sunday",
 	"Monday",
@@ -24,3 +22,11 @@ export const months = [
 	"November",
 	"December",
 ]
+
+export function probSlugToURL(slug: string) {
+	return "https://leetcode.com/problems/" + slug
+}
+
+export function tagSlugToURL(slug: string) {
+	return "https://leetcode.com/tag/" + slug
+}
