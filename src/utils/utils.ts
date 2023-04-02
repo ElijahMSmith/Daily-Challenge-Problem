@@ -1,5 +1,3 @@
-import { Difficulty } from "./types"
-
 export const days = [
 	"Sunday",
 	"Monday",
@@ -25,10 +23,10 @@ export const months = [
 	"December",
 ]
 
-export const getDifficultyString = (diff: number): string => {
-	return diff === Difficulty.EASY
-		? "Easy"
-		: diff === Difficulty.MEDIUM
-		? "Medium"
-		: "Hard"
+export function probSlugToURL(slug: string) {
+	return "https://leetcode.com/problems/" + slug
+}
+
+export function tagSlugToURL(slug: string) {
+	return "https://leetcode.com/tag/" + slug
 }

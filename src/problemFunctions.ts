@@ -5,96 +5,130 @@ import {
 	Client,
 	Guild,
 	ChannelType,
+	ForumChannel,
+	EmbedBuilder,
 } from "discord.js"
-import { getDifficultyString, months, days } from "./utils/utils"
-import { Problem, ProblemInfo } from "./utils/types"
-import { getAdditionalProblemInfo } from "./requests"
-import { EmbedBuilder } from "@discordjs/builders"
+import { days, months } from "./utils/utils"
+import { Problem, SimilarProblemInfo, Topic } from "./utils/types"
+import { channel } from "diagnostics_channel"
 
 // --------- Execution Functions ---------
 
 export const runProcess = async function (
 	client: Client,
-	currentProblems: Problem[]
+	prob: Problem
 ): Promise<void> {
-	console.log("Token: " + client.token)
+	for (let guildRecord of client.guilds.cache)
+		await sendProblem(prob, guildRecord[1])
+}
 
-	console.log("-------------------------------------")
-	console.log("Selected Problem Data: ")
-	console.log(currentProblems)
-	console.log("-------------------------------------")
+export const sendProblem = async (
+	prob: Problem,
+	guild: Guild
+): Promise<void> => {
+	const keywords = [
+		"leetcode",
+		"daily-challenge",
+		"daily_challenge",
+		"dailychallenge",
+	]
 
-	if (!currentProblems[0] || !currentProblems[1] || !currentProblems[2]) {
+	const allChannels = await guild.channels.fetch()
+
+	const sendChannel = allChannels.find((channel) => {
+		for (let keyword of keywords)
+			if (channel.name.includes(keyword)) return true
+		return false
+	})
+
+	if (!sendChannel) {
 		console.log(
-			"Could not load one or more problem difficulties, not sending as a result"
+			"Could not find a channel in which to post for guild " + guild.name
 		)
 		return
 	}
 
-	for (let guildRecord of client.guilds.cache)
-		await sendProblems(currentProblems, guildRecord[1])
-}
+	// LeetCode opens the problem assigned to the next day for 24hrs, which is what we have
+	const tomorrow = new Date(new Date().getTime() + 1000 * 60 * 60 * 24)
+	const stringDate = months[tomorrow.getMonth()] + " " + tomorrow.getDate()
 
-export const sendProblems = async (
-	problemData: Problem[],
-	guild: Guild
-): Promise<void> => {
-	// Index 0 is easy problem, index 1 is medium problem, index 2 is hard problem
-	for (let i = 0; i < 3; i++) {
-		const sendProblem = problemData[i]
-
-		const allChannels = await guild.channels.fetch()
-		const sendChannel = allChannels.find((channel) =>
-			channel.name.includes(process.env.CHANNEL_NAME)
+	// TypeGuard to determine channel type
+	if (
+		((sendChannel): sendChannel is TextChannel =>
+			sendChannel.type === ChannelType.GuildText)(sendChannel)
+	) {
+		console.log(
+			"Found TextChannel " +
+				channel.name +
+				" in which to post for guild " +
+				guild.name
 		)
 
-		if (!sendChannel) {
-			console.log(
-				`Couldn't find the required text channel in guild with id ${guild.id}!`
+		try {
+			const message: Message = await sendChannel.send({
+				embeds: [getProblemEmbed(prob, tomorrow)],
+			})
+
+			console.log("Starting thread on problem sent in TextChannel")
+			const thread: ThreadChannel = await message.startThread({
+				name: "Discussion (" + stringDate + ") - " + prob.name,
+				autoArchiveDuration: 1440, // One day
+			})
+
+			await thread.send(
+				"This thread will archive after 24h of inactivity.\n\nPlease wrap any code in a spoiler (with |\\|code|\\|) or a file upload so that others can solve this on their own.\n\n**Good luck!**"
 			)
-			return
-		}
 
-		// Using a type guard to narrow down the correct type of TextChannel
-		if (
-			!((sendChannel): sendChannel is TextChannel =>
-				sendChannel.type === ChannelType.GuildText)(sendChannel)
-		) {
-			console.log(
-				`Found the required channel in guild with id ${guild.id} but it's not a text channel!`
+			console.log("Successfully posted!")
+		} catch (error) {
+			console.error(
+				"Error occurred while posting to ForumChannel:",
+				error
 			)
-			return
 		}
+	} else if (
+		((sendChannel): sendChannel is ForumChannel =>
+			sendChannel.type === ChannelType.GuildForum)(sendChannel)
+	) {
+		console.log(
+			"Found ForumChannel " +
+				channel.name +
+				" in which to post for guild " +
+				guild.name
+		)
 
-		const today = new Date()
-		const stringDate = months[today.getMonth()] + " " + today.getDate()
+		try {
+			await sendChannel.threads.create({
+				name: `Daily LeetCode Challenge (${stringDate})`,
+				message: {
+					embeds: [getProblemEmbed(prob, tomorrow)],
+				},
+			})
 
-		console.log("Sending out to guild " + guild.id)
-		const message: Message = await sendChannel.send({
-			embeds: [await getProblemEmbed(sendProblem)],
-		})
-
-		console.log("Starting thread on sent problem")
-		const thread: ThreadChannel = await message.startThread({
-			name: "Discussion (" + stringDate + ") - " + sendProblem.name,
-			autoArchiveDuration: 1440, // One day
-		})
-
-		await thread.send(
-			"This thread will archive after 24h of inactivity.\n\nPlease wrap any code in a spoiler (with |\\|code|\\|) or a file upload so that others can solve this on their own.\n\n**Good luck!**"
+			console.log("Successfully posted!")
+		} catch (error) {
+			console.error(
+				"Error occurred while posting to ForumChannel:",
+				error
+			)
+		}
+	} else {
+		console.log(
+			"Could not post to channel " +
+				sendChannel.name +
+				" in guild " +
+				guild.name +
+				" which is not a TextChannel or ForumChannel."
 		)
 	}
 }
 
-const getProblemEmbed = async (problem: Problem): Promise<EmbedBuilder> => {
-	const today = new Date()
-	const difficultyString = getDifficultyString(problem.difficulty)
-	const additionalProblemInfo = await getAdditionalProblemInfo(problem)
+const getProblemEmbed = (problem: Problem, date: Date): EmbedBuilder => {
 	return new EmbedBuilder()
 		.setTitle(
-			`Daily Challenge for ${days[today.getDay()]} ${
-				months[today.getMonth()]
-			} ${today.getDate()} ${today.getFullYear()}`
+			`Daily Challenge for ${days[date.getDay()]}, ${
+				months[date.getMonth()]
+			} ${date.getDate()}, ${date.getFullYear()}`
 		)
 		.setURL(problem.URL)
 		.addFields(
@@ -118,47 +152,38 @@ const getProblemEmbed = async (problem: Problem): Promise<EmbedBuilder> => {
 					) + "%",
 				inline: true,
 			},
-			{ name: "Difficulty", value: difficultyString, inline: true },
+			{ name: "Difficulty", value: problem.difficulty, inline: true },
 			{
 				name: "Likes",
-				value: additionalProblemInfo.likes.toString(),
+				value: problem.likes.toString(),
 				inline: true,
 			},
 			{
 				name: "Dislike",
-				value: additionalProblemInfo.dislikes.toString(),
+				value: problem.dislikes.toString(),
 				inline: true,
 			},
 			{
 				name: "Tagged Topics",
-				value: generateTagsString(additionalProblemInfo),
+				value: generateTagsString(problem.tagged),
 			},
 			{
 				name: "Similar Problems",
-				value: generateSimilarString(additionalProblemInfo),
+				value: generateSimilarString(problem.similar),
 			}
 		)
 }
 
-const generateSimilarString = (info: ProblemInfo): string => {
-	const build = info.similarQuestions.reduce((accumulated, question) => {
-		if (!question)
-			throw new Error(
-				"Trying to generate string of similar problems from an undefined ProblemInfo object. Full similarQuestions array."
-			)
-		return accumulated + question.difficulty + " - " + question.url + "\n"
-	}, "")
-	return build === "" ? "None" : build
-}
-
-const generateTagsString = (info: ProblemInfo): string => {
-	const build = info.topics.reduce((accumulated, topic) => {
-		if (!topic)
-			throw new Error(
-				"Trying to generate string of topics from an undefined ProblemInfo object."
-			)
-
+const generateTagsString = (tagged: Topic[]): string => {
+	if (tagged.length === 0) return "None"
+	return tagged.reduce((accumulated, topic) => {
 		return accumulated + topic.name + " - " + topic.url + "\n"
 	}, "")
-	return build === "" ? "None" : build
+}
+
+const generateSimilarString = (similar: SimilarProblemInfo[]): string => {
+	if (similar.length === 0) return "None"
+	return similar.reduce((accumulated, question) => {
+		return accumulated + question.difficulty + " - " + question.url + "\n"
+	}, "")
 }
